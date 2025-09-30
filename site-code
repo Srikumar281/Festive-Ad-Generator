@@ -1,0 +1,661 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+// --- Placeholder Assets (To maintain zero-cost, single-file rule) ---
+// Note: In a real React project, these would be imported from the /public/assets folder.
+const PLACEHOLDERS = {
+    HARATHI_PLATE: 'https://placehold.co/400x400/D4AF37/FFD700?text=HARATHI+PLATE',
+    DURGA_VICTORY: 'https://placehold.co/400x700/FFA500/FFFFFF?text=DURGA+VICTORY',
+    DIWALI_SPARKLE: 'https://placehold.co/400x700/FFCC00/000000?text=DIWALI+SPARKLE',
+    SK_LOGO: 'https://placehold.co/64x64/000000/FFFFFF?text=SK',
+};
+
+// --- GLOBAL UTILITIES ---
+
+/**
+ * Custom hook to simulate the 3D effect on the welcome page.
+ * In this single file environment, we simulate the effect using CSS and rotation.
+ */
+const useDevotionalRotation = () => {
+    const ref = useRef(null);
+    useEffect(() => {
+        const element = ref.current;
+        let rotation = 0;
+        let animationFrameId;
+
+        const animate = () => {
+            if (element) {
+                rotation += 0.3; // Slower rotation
+                element.style.transform = `rotateY(${rotation}deg) rotateX(10deg)`;
+            }
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        return () => cancelAnimationFrame(animationFrameId);
+    }, []);
+    return ref;
+};
+
+// --- LLM API Configuration ---
+const API_CONFIG = {
+    apiKey: "", // Placeholder
+    apiUrl: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent`,
+    maxRetries: 3,
+    baseDelay: 1000
+};
+
+// --- COMPONENTS ---
+
+/**
+ * Step 0: Welcome Screen with Sacred Harathi Plate simulation
+ */
+const Welcome3D = ({ onStepIn }) => {
+    const devotionalRef = useDevotionalRotation();
+
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-cover opacity-10" style={{ backgroundImage: `url(${PLACEHOLDERS.DURGA_VICTORY})` }}></div>
+            
+            <div 
+                ref={devotionalRef}
+                className="relative w-64 h-64 bg-yellow-600 rounded-full flex items-center justify-center shadow-2xl"
+                style={{
+                    boxShadow: '0 0 40px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(255, 215, 0, 0.5)',
+                    transformStyle: 'preserve-3d',
+                    transition: 'transform 0.1s linear',
+                    backgroundImage: `url(${PLACEHOLDERS.HARATHI_PLATE})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
+                 <div className="absolute inset-0 rounded-full ring-8 ring-yellow-300/30"></div>
+                 <img src={PLACEHOLDERS.SK_LOGO} alt="SK Ads Logo" className="w-16 h-16 rounded-full absolute z-10 opacity-90"/>
+            </div>
+
+            <div className="text-center mt-10 relative z-20">
+                <h1 className="text-5xl font-extrabold text-yellow-400 mb-2" style={{ textShadow: '0 0 10px #FFD700' }}>
+                    SK ADS & ARTS
+                </h1>
+                <p className="text-xl font-light mb-8 text-yellow-100">
+                    Sacred Automation: Step into the Divine Light
+                </p>
+                <button
+                    onClick={onStepIn}
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full text-xl uppercase tracking-wider transition duration-300 shadow-xl"
+                >
+                    Step In & Create Now
+                </button>
+            </div>
+        </div>
+    );
+};
+
+/**
+ * Step 1: Form for Owner/Shop Details
+ */
+const OwnerDetailsForm = ({ onSubmit }) => {
+    const [details, setDetails] = useState({
+        shopName: 'SK ADS & ARTS',
+        ownerName: 'Owner Name',
+        upiId: 'example@upi',
+        occasionText: 'Victory of Light! FLAT 50% OFF!',
+        logo: null,
+        templateId: 0,
+    });
+    const [error, setError] = useState('');
+
+    const templates = [
+        { id: 0, label: 'Dussehra Victory', theme: 'Dussehra', image: PLACEHOLDERS.DURGA_VICTORY },
+        { id: 1, label: 'Diwali Sparkle', theme: 'Diwali', image: PLACEHOLDERS.DIWALI_SPARKLE },
+    ];
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+        if (!details.shopName.trim() || !details.ownerName.trim() || !details.upiId.trim()) {
+            setError('Please fill in all required fields (Shop, Owner, UPI ID).');
+            return;
+        }
+        if (!details.upiId.includes('@')) {
+            setError('Please enter a valid UPI ID (e.g., example@bank).');
+            return;
+        }
+        onSubmit(details);
+    };
+
+    const handleLogoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setDetails(d => ({ ...d, logo: file }));
+        }
+    };
+
+    const selectTemplate = (id) => {
+        setDetails(d => ({ ...d, templateId: id }));
+    };
+
+    return (
+        <div className="container mx-auto p-4 lg:p-10 bg-white shadow-2xl rounded-xl mt-10 max-w-4xl">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">1. Customize Your Ad</h2>
+            {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+                
+                {/* Shop Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input required placeholder="Shop/Company Name (Max 30 Chars)" maxLength={30}
+                        className="p-3 border rounded-lg focus:ring-amber-500 focus:border-amber-500"
+                        value={details.shopName} onChange={e => setDetails({...details, shopName: e.target.value})} />
+                    <input required placeholder="Owner Name"
+                        className="p-3 border rounded-lg focus:ring-amber-500 focus:border-amber-500"
+                        value={details.ownerName} onChange={e => setDetails({...details, ownerName: e.target.value})} />
+                </div>
+                
+                {/* UPI and Message */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <input required placeholder="Your UPI ID (example@upi)"
+                        className="p-3 border rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        value={details.upiId} onChange={e => setDetails({...details, upiId: e.target.value})} />
+                     <textarea placeholder="Offer / Devotional Message (Max 50 Chars)" maxLength={50}
+                        className="p-3 border rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        rows="1" value={details.occasionText} onChange={e => setDetails({...details, occasionText: e.target.value})} />
+                </div>
+                
+                {/* Template Selection */}
+                <h3 className="text-xl font-bold text-gray-800 pt-4">2. Select Auspicious Theme</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    {templates.map(tpl => (
+                        <div key={tpl.id} 
+                             onClick={() => selectTemplate(tpl.id)}
+                             className={`cursor-pointer p-4 rounded-xl shadow-md transition-all duration-150 text-center text-white font-bold text-lg 
+                                ${details.templateId === tpl.id ? 'border-4 border-yellow-500 bg-red-600' : 'border-4 border-gray-300 bg-gray-600 hover:bg-gray-700'}`}
+                             style={{backgroundImage: `url(${tpl.image})`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
+                            {tpl.label}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Logo Upload */}
+                <div className="pt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload Your Shop Logo (Optional)</label>
+                    <input type="file" accept="image/png, image/jpeg" onChange={handleLogoChange}
+                        className="w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100" />
+                </div>
+                
+                {/* Submit/Proceed */}
+                <button type="submit"
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-extrabold py-3 rounded-xl text-lg uppercase tracking-wider transition duration-300 shadow-md mt-6"
+                >
+                    Finalize Details
+                </button>
+            </form>
+        </div>
+    );
+};
+
+/**
+ * Step 2: Live Preview and AI Customizer
+ */
+const StatusCustomizer = ({ ownerDetails, onProceedToPayment }) => {
+    const template = templates.find(t => t.id === ownerDetails.templateId) || templates[0];
+    const [liveText, setLiveText] = useState(ownerDetails.occasionText);
+    const [suggestions, setSuggestions] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const canvasRef = useRef(null);
+    const [logoUrl, setLogoUrl] = useState(null);
+
+    // Initial logo URL setup
+    useEffect(() => {
+        if (ownerDetails.logo) {
+            setLogoUrl(URL.createObjectURL(ownerDetails.logo));
+        } else {
+            setLogoUrl(null);
+        }
+    }, [ownerDetails.logo]);
+    
+    // LLM Functionality
+    const handleTextGeneration = useCallback(async () => {
+        setLoading(true);
+        setSuggestions([]);
+        setError('');
+
+        const systemPrompt = "You are a creative marketing copywriter specializing in short, impactful social media ads (max 50 characters). Generate 3 short, catchy taglines or sales offers for a small business for their festive status updates related to the occasion. Each tagline must be on a single line and ready to be used as a title or main offer text. Do not include any introductory or concluding remarks, just the raw list of 3 texts, separated by a newline character. Ensure all text is devotional or sales-focused.";
+        
+        const userQuery = `Generate 3 offer/tagline ideas for a shop named "${ownerDetails.shopName}" for the auspicious occasion/theme: "${template.label}". Focus on sales or devotional wishes.`;
+
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            tools: [{ "google_search": {} }],
+        };
+
+        try {
+            let result;
+            let attempt = 0;
+            while (attempt < API_CONFIG.maxRetries) {
+                attempt++;
+                try {
+                    const response = await fetch(API_CONFIG.apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    result = await response.json();
+                    break;
+                } catch (err) {
+                    if (attempt === API_CONFIG.maxRetries) throw err;
+                    await new Promise(resolve => setTimeout(resolve, API_CONFIG.baseDelay * (2 ** (attempt - 1))));
+                }
+            }
+
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const newSuggestions = text.split('\n')
+                                    .map(line => line.trim())
+                                    .filter(line => line.length > 5 && line.length <= 50);
+            
+            setSuggestions(newSuggestions);
+        } catch (err) {
+            setError('Failed to generate suggestions. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
+    }, [ownerDetails.shopName, template.label]);
+
+    // --- CANVAS TEXT WRAPPING AND DRAWING LOGIC ---
+    
+    // Utility function to split text into lines
+    const getWrappedText = (ctx, text, maxWidth) => {
+        const words = text.split(' ');
+        let lines = [];
+        let currentLine = words[0] || '';
+
+        for (let i = 1; i < words.length; i++) {
+            const word = words[i];
+            const testLine = currentLine + ' ' + word;
+            if (ctx.measureText(testLine).width < maxWidth) {
+                currentLine = testLine;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    };
+
+    const drawImage = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        // Define canvas dimensions based on the 9:16 aspect ratio (1080x1920 scaled down to 340 width)
+        const W = 340; 
+        const H = 604; 
+        canvas.width = W;
+        canvas.height = H;
+
+        // 1. Draw Background Image
+        const bgImg = new Image();
+        bgImg.crossOrigin = "Anonymous";
+        bgImg.onload = () => {
+            // Draw image to cover
+            const ratio = Math.max(W / bgImg.width, H / bgImg.height);
+            const w = bgImg.width * ratio;
+            const h = bgImg.height * ratio;
+            const x = (W - w) / 2;
+            const y = (H - h) / 2;
+            ctx.drawImage(bgImg, x, y, w, h);
+
+            // 2. Draw Text Overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Text Styles
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            
+            // --- 3. Draw Shop Name (Top Branding) ---
+            ctx.font = 'bold 24px Inter';
+            ctx.fillStyle = template.theme === 'Diwali' ? '#FFD700' : '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.fillText(ownerDetails.shopName.toUpperCase(), W / 2, H * 0.08); // Adjusted position
+
+            // --- 4. Draw Main Offer/Occasion Text (Center & Wrapped) ---
+            const maxWidth = W * 0.85; // Max width for text block (85% of canvas width)
+            const fontSize = 36;
+            ctx.font = `900 ${fontSize}px Inter`;
+            
+            // Get wrapped lines
+            const lines = getWrappedText(ctx, liveText, maxWidth);
+
+            const lineHeight = fontSize * 1.2; // 120% of font size
+            const totalTextHeight = lines.length * lineHeight;
+            let currentY = H * 0.5 - totalTextHeight / 2 + lineHeight / 2;
+            
+            ctx.fillStyle = template.theme === 'Diwali' ? '#FFFFFF' : '#FFD700';
+
+            lines.forEach(line => {
+                ctx.fillText(line, W / 2, currentY);
+                currentY += lineHeight;
+            });
+
+            ctx.shadowBlur = 0; // Reset shadow
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // --- 5. Draw Logo ---
+            if (logoUrl) {
+                const logoImg = new Image();
+                logoImg.crossOrigin = "Anonymous";
+                logoImg.onload = () => {
+                    const logoSize = 60;
+                    // Draw logo scaled down in top right corner
+                    ctx.drawImage(logoImg, W - logoSize - 15, 15, logoSize, logoSize);
+                    
+                    // --- 6. Draw Owner Text (Bottom Branding) ---
+                    ctx.font = 'normal 14px Inter';
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`By: ${ownerDetails.ownerName}`, W / 2, H * 0.95);
+                };
+                logoImg.src = logoUrl;
+            } else {
+                 // --- 6. Draw Owner Text (Bottom Branding) ---
+                ctx.font = 'normal 14px Inter';
+                ctx.fillStyle = '#FFFFFF';
+                ctx.textAlign = 'center';
+                ctx.fillText(`By: ${ownerDetails.ownerName}`, W / 2, H * 0.95);
+            }
+        };
+        bgImg.src = template.image; 
+    }, [template.image, ownerDetails.shopName, ownerDetails.ownerName, liveText, logoUrl, template.theme]);
+
+    useEffect(() => {
+        drawImage();
+    }, [drawImage]);
+    
+    // Download Function
+    const handleDownload = () => {
+        // Create a new, full-size canvas (1080x1920) for the final image download
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = 1080;
+        finalCanvas.height = 1920;
+        const finalCtx = finalCanvas.getContext('2d');
+
+        const W_FULL = 1080;
+        const H_FULL = 1920;
+
+        const bgImg = new Image();
+        bgImg.crossOrigin = "Anonymous";
+        
+        // CRITICAL FIX: Ensure the state transition happens AFTER the image is successfully downloaded.
+        bgImg.onload = () => {
+             // Redrawing the high-res background
+            const ratio = Math.max(W_FULL / bgImg.width, H_FULL / bgImg.height);
+            const w = bgImg.width * ratio;
+            const h = bgImg.height * ratio;
+            const x = (W_FULL - w) / 2;
+            const y = (H_FULL - h) / 2;
+            finalCtx.drawImage(bgImg, x, y, w, h);
+
+            // Redrawing overlays and text at full resolution
+            finalCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            finalCtx.fillRect(0, 0, W_FULL, H_FULL);
+
+            // Text Styles (Scaled up)
+            finalCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            finalCtx.shadowBlur = 12;
+            finalCtx.shadowOffsetX = 6;
+            finalCtx.shadowOffsetY = 6;
+            
+            // Shop Name (Scaled up)
+            finalCtx.font = 'bold 72px Inter'; // 24 * 3 = 72
+            finalCtx.fillStyle = template.theme === 'Diwali' ? '#FFD700' : '#FFFFFF';
+            finalCtx.textAlign = 'center';
+            finalCtx.fillText(ownerDetails.shopName.toUpperCase(), W_FULL / 2, H_FULL * 0.08); 
+            
+            // Main Offer Text (Scaled up and Wrapped)
+            const maxWidth_FULL = W_FULL * 0.85; 
+            const fontSize_FULL = 108; // 36 * 3 = 108
+            finalCtx.font = `900 ${fontSize_FULL}px Inter`;
+            
+            // Get wrapped lines (Need to use the finalCtx for measurement)
+            const lines_FULL = getWrappedText(finalCtx, liveText, maxWidth_FULL);
+
+            const lineHeight_FULL = fontSize_FULL * 1.2; 
+            const totalTextHeight_FULL = lines_FULL.length * lineHeight_FULL;
+            let currentY_FULL = H_FULL * 0.5 - totalTextHeight_FULL / 2 + lineHeight_FULL / 2;
+            
+            finalCtx.fillStyle = template.theme === 'Diwali' ? '#FFFFFF' : '#FFD700';
+
+            lines_FULL.forEach(line => {
+                finalCtx.fillText(line, W_FULL / 2, currentY_FULL);
+                currentY_FULL += lineHeight_FULL;
+            });
+
+            finalCtx.shadowBlur = 0; // Reset shadow
+            finalCtx.shadowOffsetX = 0;
+            finalCtx.shadowOffsetY = 0;
+
+            // Logo (Scaled up)
+            if (logoUrl) {
+                const logoImg = new Image();
+                logoImg.crossOrigin = "Anonymous";
+                logoImg.onload = () => {
+                    const logoSize_FULL = 180; // 60 * 3 = 180
+                    finalCtx.drawImage(logoImg, W_FULL - logoSize_FULL - 45, 45, logoSize_FULL, logoSize_FULL);
+                    
+                    // Owner Text (Scaled up)
+                    finalCtx.font = 'normal 42px Inter'; // 14 * 3 = 42
+                    finalCtx.fillStyle = '#FFFFFF';
+                    finalCtx.textAlign = 'center';
+                    finalCtx.fillText(`By: ${ownerDetails.ownerName}`, W_FULL / 2, H_FULL * 0.95);
+                    
+                    // Final Download action after all asynchronous loads
+                    const imageURL = finalCanvas.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    a.href = imageURL;
+                    a.download = `SKAds_${template.theme}_${ownerDetails.shopName}_HD.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    // CRITICAL FIX: Transition to payment page AFTER download is initiated.
+                    onProceedToPayment(); 
+                };
+                logoImg.src = logoUrl;
+            } else {
+                 // Owner Text (Scaled up)
+                finalCtx.font = 'normal 42px Inter'; 
+                finalCtx.fillStyle = '#FFFFFF';
+                finalCtx.textAlign = 'center';
+                finalCtx.fillText(`By: ${ownerDetails.ownerName}`, W_FULL / 2, H_FULL * 0.95);
+
+                // Final Download action
+                const imageURL = finalCanvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = imageURL;
+                a.download = `SKAds_${template.theme}_${ownerDetails.shopName}_HD.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // CRITICAL FIX: Transition to payment page AFTER download is initiated.
+                onProceedToPayment(); 
+            }
+        };
+        bgImg.src = template.image; 
+    };
+
+
+    return (
+        <div className="container mx-auto p-4 lg:p-10 bg-white shadow-2xl rounded-xl mt-10 max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column: Live Preview */}
+            <div className="flex flex-col items-center">
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Live Ad Preview</h2>
+                <div className="w-full max-w-sm aspect-[9/16] bg-gray-200 rounded-xl shadow-xl overflow-hidden border-4 border-yellow-500">
+                    <canvas ref={canvasRef} className="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            {/* Right Column: Text Customization & AI */}
+            <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-800">Customize Message</h2>
+                <textarea 
+                    value={liveText}
+                    onChange={(e) => setLiveText(e.target.value)}
+                    maxLength={50}
+                    rows="3"
+                    className="w-full p-3 border rounded-lg focus:ring-red-500 focus:border-red-500 text-lg font-semibold"
+                />
+                
+                {/* AI Assistant */}
+                <div className="p-4 bg-purple-50 rounded-xl border border-purple-300">
+                    <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center">
+                        ✨ AI Offer Assistant
+                    </h3>
+                    <button type="button" onClick={handleTextGeneration} disabled={loading}
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center justify-center space-x-2">
+                        {loading ? <div className="loader w-5 h-5 border-white border-t-purple-300"></div> : <span>Generate Catchy Offer Text Ideas</span>}
+                    </button>
+                    {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                    
+                    <div className="text-sm space-y-2 mt-4 max-h-40 overflow-y-auto">
+                        {suggestions.map((suggestion, index) => (
+                            <button key={index} onClick={() => setLiveText(suggestion)}
+                                    className="w-full text-left p-2 rounded-md transition-all text-gray-800 text-sm bg-yellow-100 hover:bg-yellow-200">
+                                {index + 1}. {suggestion} (Click to use)
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Final Proceed Button */}
+                <button 
+                    onClick={handleDownload}
+                    className="primary-btn w-full text-white font-extrabold py-3 px-4 rounded-xl text-lg shadow-lg uppercase mt-6"
+                >
+                    Download Preview & Proceed to Payment (₹49)
+                </button>
+            </div>
+        </div>
+    );
+};
+
+/**
+ * Step 3: Payment Page
+ */
+const PaymentPage = ({ ownerDetails, onPayment }) => {
+    const PAYEE_NAME = 'SK Ads & Arts'; 
+    const AMOUNT = '49';
+    const NOTE = 'FestiveAdPurchase';
+
+    // IMPORTANT: Use ownerDetails.upiId for the actual payee in a production environment
+    const upiLink = `upi://pay?pa=${ownerDetails.upiId}&pn=${encodeURIComponent(PAYEE_NAME)}&am=${AMOUNT}&cu=INR&tn=${encodeURIComponent(NOTE)}`;
+
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-900">
+            <div className="p-8 bg-white rounded-xl shadow-2xl text-center max-w-lg w-full">
+                <h2 className="text-3xl font-extrabold text-red-600 mb-4">Secure Your Download</h2>
+                <p className="text-lg text-gray-600 mb-6">Complete the auspicious payment of ₹49 to receive the final, high-resolution ad image.</p>
+                
+                <div className="p-5 bg-amber-50 border border-amber-300 rounded-lg mb-6">
+                    <p className="text-4xl font-bold text-red-600">₹49.00 <span className="text-sm font-normal text-gray-500">Only</span></p>
+                    <p className="text-sm text-gray-700 mt-2">Pay to: {ownerDetails.upiId}</p>
+                </div>
+                
+                <a href={upiLink} target="_blank" rel="noopener noreferrer"
+                   className="upi-btn w-full text-white font-semibold py-4 px-4 rounded-xl text-xl shadow-lg flex items-center justify-center space-x-2 transition duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                        <path d="M11.75 3.018a.75.75 0 0 1 .634.194l6.002 5.998a.75.75 0 0 1-.001 1.06l-1.077 1.079a.75.75 0 0 1-1.06-.001l-1.925-1.921V20.25a.75.75 0 0 1-1.5 0V8.334l-1.922 1.922a.75.75 0 0 1-1.06-.001l-1.077-1.079a.75.75 0 0 1-.001-1.06l6.003-5.998a.75.75 0 0 1 .193-.194Zm1.25 15.682a.75.75 0 0 1 1.5 0V20.25a.75.75 0 0 1-1.5 0v-1.55ZM10.5 10.5a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5h-1.5ZM4.5 13.5a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 0 1.5H5.25a.75.75 0 0 1-.75-.75ZM4.5 16.5a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 0 1.5H5.25a.75.75 0 0 1-.75-.75ZM18.75 13.5a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5h-1.5ZM18.75 16.5a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5h-1.5Z" />
+                    </svg>
+                    Pay ₹49 via UPI
+                </a>
+
+                <p className="mt-4 text-sm text-gray-500">
+                    <span className="text-red-500 font-semibold">NOTE:</span> After paying, click "I've Paid" below.
+                </p>
+
+                <button onClick={onPayment}
+                        className="primary-btn w-full text-white font-semibold py-3 px-4 rounded-xl text-lg uppercase mt-6 transition duration-300">
+                    I've Paid (Proceed to Download)
+                </button>
+            </div>
+        </div>
+    );
+};
+
+/**
+ * Step 4: Thank You Page
+ */
+const ThankYou = () => {
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-900 text-white">
+            <div className="p-10 bg-white rounded-xl shadow-2xl text-center max-w-xl w-full">
+                <img src={PLACEHOLDERS.HARATHI_PLATE} alt="Harathi Plate" className="w-40 h-40 mx-auto mb-6 rounded-full shadow-lg" />
+                <h2 className="text-4xl font-extrabold text-red-600 mb-4">Om Shanti! Thank You!</h2>
+                <p className="text-2xl font-semibold text-gray-800 mb-6">May Maa Durga & Lord Ram bless your business with success and victory this season.</p>
+                
+                <div className="space-y-3 text-lg text-gray-600">
+                    <p>Your beautiful, customized status ad is ready to use on WhatsApp, Instagram, or Facebook.</p>
+                    <p className="font-bold text-amber-600">Happy Dussehra & Happy Diwali!</p>
+                </div>
+
+                {/* Simulating devotional audio, but playback will fail without external file */}
+                <div className="mt-8 text-gray-500 text-sm">
+                    Devotional audio not included in this single-file build.
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- TEMPLATE DATA ---
+const templates = [
+    { id: 0, label: 'Dussehra Victory', theme: 'Dussehra', image: PLACEHOLDERS.DURGA_VICTORY, color: '#FF7F50' },
+    { id: 1, label: 'Diwali Sparkle', theme: 'Diwali', image: PLACEHOLDERS.DIWALI_SPARKLE, color: '#D4AF37' },
+];
+
+/**
+ * Main Application Component
+ */
+const App = () => {
+    const [step, setStep] = useState(0); // 0: Welcome, 1: Form, 2: Customizer, 3: Payment, 4: Thank You
+    const [ownerDetails, setOwnerDetails] = useState(null);
+    
+    // Global style for Tailwind - applied once
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+            body { font-family: 'Inter', sans-serif; background-color: #0d0d1a; }
+            .primary-btn { background-image: linear-gradient(to right, #FF7F50, #FFD700); }
+            .upi-btn { background-color: #6C5CE7; }
+            .loader { border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid #FFD700; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        `;
+        document.head.appendChild(style);
+    }, []);
+
+    const handleFormSubmit = (details) => {
+        setOwnerDetails(details);
+        setStep(2); // Move to Status Customizer (skipping gallery)
+    };
+
+    switch (step) {
+        case 0: return <Welcome3D onStepIn={() => setStep(1)} />;
+        case 1: return <OwnerDetailsForm onSubmit={handleFormSubmit} />;
+        case 2: return <StatusCustomizer ownerDetails={ownerDetails} onProceedToPayment={() => setStep(3)} />;
+        case 3: return <PaymentPage ownerDetails={ownerDetails} onPayment={() => setStep(4)} />;
+        case 4: return <ThankYou />;
+        default: return <Welcome3D onStepIn={() => setStep(1)} />;
+    }
+};
+
+export default App;
