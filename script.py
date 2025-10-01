@@ -62,7 +62,7 @@ index_html_content = '''<!DOCTYPE html>
           <div>Dussehra Divine Wishes</div>
         </div>
         <div class="template-card" onclick="selectTemplate('assets/Durga Maa.jpg')">
-          <img src="assets/Durga Maa.jpg" width="200" alt="Victory of Good" />
+          <img src="assets/Durga Maa.jpg" width="160" alt="Victory of Good" />
           <div>Victory of Good</div>
         </div>
       </div>
