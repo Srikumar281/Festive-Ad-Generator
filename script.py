@@ -1,0 +1,161 @@
+import os
+import shutil
+
+
+
+# Create index.html with full static HTML/CSS/JS
+index_html_content = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dussehra & Diwali WhatsApp Status Generator</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #fffaf2; }
+    .container { max-width: 800px; margin: auto; text-align: center; }
+    .step { padding: 40px; display: none; }
+    .active { display: block; }
+    .logo-main, .goddess-img { width: 150px; margin: 50px; }
+    .festive-title { color: #9c6800; font-size: 2.8rem; font-family: 'Baloo', cursive; }
+    .step-in-btn { padding: 18px 55px; font-size: 1.2rem; background: #ffcc25; border: none; border-radius: 16px; margin-top: 40px; box-shadow: 0 6px 22px #dab600; }
+    .template-gallery { display: flex; justify-content: center; gap: 32px; margin: 40px 0; }
+    .template-card { border: 2px solid #ffe766; border-radius: 9px; padding: 14px; box-shadow: 0 0 12px #b5b5b5; cursor: pointer; }
+    .status-editor { position: relative; width: 340px; margin: 40px auto; }
+    .status-bg { width: 100%; border-radius: 4px; }
+    .overlay-logo { position: absolute; top: 15px; right: 15px; width: 56px; height: 56px; border-radius: 50%; }
+    .overlay-text { position: absolute; bottom: 50px; left: 20px; font-size: 18px; color: #ffe317; font-weight: bold; font-family: 'Baloo'; max-width: 280px; word-wrap: break-word; }
+    .overlay-owner { position: absolute; bottom: 25px; left: 20px; font-size: 14px; color: #fff8dc; max-width: 280px; word-wrap: break-word; }
+    .payment-section { text-align: center; margin: 60px; }
+    .upi-link { background: #25d366; padding: 10px 35px; color: #fff; border-radius: 21px; text-decoration: none; font-size: 1.2em; margin-top: 20px; display: inline-block; }
+    .thankyou-section { text-align: center; padding: 30px; background: #fffaf2; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <!-- Step 1: Welcome -->
+    <div id="step1" class="step active">
+      <img class="logo-main" src="assets/Logo.jpg" alt="Logo" />
+      <img class="goddess-img" src="assets/fireworks.jpeg" alt="crackers" />
+      <h1 class="festive-title">Welcome to the Grand Dussehra & Diwali Wishes Studio</h1>
+      <button onclick="nextStep(2)" class="step-in-btn">Step In</button>
+    </div>
+
+    <!-- Step 2: Owner Details -->
+    <div id="step2" class="step">
+      <h2>Enter Your Shop Details</h2>
+      <form id="detailsForm">
+        <input type="text" id="shopName" placeholder="Shop Name" required style="margin: 10px; padding: 10px; width: 200px;" />
+        <input type="text" id="ownerName" placeholder="Owner Name" required style="margin: 10px; padding: 10px; width: 200px;" /><br><br>
+        <input type="text" id="phone" placeholder="Phone" required style="margin: 10px; padding: 10px; width: 200px;" />
+        <input type="file" id="logo" accept="image/*" required style="margin: 10px;" /><br><br>
+        <button type="button" onclick="saveDetails()">Continue</button>
+      </form>
+    </div>
+
+    <!-- Step 3: Template Gallery -->
+    <div id="step3" class="step">
+      <h2>Select a Template</h2>
+      <div class="template-gallery">
+        <div class="template-card" onclick="selectTemplate('assets/pexels-souvik-laha-3637528-10852670.jpg')">
+          <img src="assets/pexels-souvik-laha-3637528-10852670.jpg" width="160" alt="Dussehra Wishes" />
+          <div>Dussehra Divine Wishes</div>
+        </div>
+        <div class="template-card" onclick="selectTemplate('assets/Durga Maa.jpg')">
+          <img src="assets/Durga Maa.jpg" width="200" alt="Victory of Good" />
+          <div>Victory of Good</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Customize Status -->
+    <div id="step4" class="step">
+      <h2>Customize Your Status</h2>
+      <div class="status-editor">
+        <img id="statusBg" class="status-bg" src="" alt="Status" />
+        <img id="overlayLogo" class="overlay-logo" src="" alt="Logo" />
+        <div id="overlayText" class="overlay-text"></div>
+        <div id="overlayOwner" class="overlay-owner"></div>
+      </div>
+      <button onclick="nextStep(5)">Download & Continue</button>
+    </div>
+
+    <!-- Step 5: Payment -->
+    <div id="step5" class="step">
+      <h2>Pay ₹49 to Unlock</h2>
+      <img src="assets/upi-qr.png" width="180" alt="UPI QR" />
+      <br><br>
+      <a href="upi://pay?pa=bojjasrikumar0806-1@oksbi&pn=Srikumar+Bojja&am=29&cu=INR" class="upi-link" target="_blank" rel="noopener noreferrer">Pay Now with UPI</a>
+      <button onclick="nextStep(6)">I've Paid</button>
+    </div>
+
+    <!-- Step 6: Thank You -->
+    <div id="step6" class="step">
+      <div class="thankyou-section">
+        <img src="assets/Harathi.jpg" width="220" alt="Harathi" />
+        <h2>Thank You & Happy Dussehra!</h2>
+        <p>May Goddess Durga & Lord Sri Ram bless you with happiness and prosperity.</p>
+        <audio controls autoplay>
+          <source src="assets/devotional-song.mp3" type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    let selectedTemplate = '';
+    let ownerDetails = {};
+
+    function nextStep(step) {
+      document.getElementById('step' + currentStep).classList.remove('active');
+      currentStep = step;
+      document.getElementById('step' + currentStep).classList.add('active');
+    }
+
+    function saveDetails() {
+      ownerDetails.shopName = document.getElementById('shopName').value;
+      ownerDetails.ownerName = document.getElementById('ownerName').value;
+      ownerDetails.phone = document.getElementById('phone').value;
+      const logoFile = document.getElementById('logo').files[0];
+      if (logoFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          ownerDetails.logoSrc = e.target.result;
+          nextStep(3);
+        };
+        reader.readAsDataURL(logoFile);
+      }
+    }
+
+    function selectTemplate(imgSrc) {
+      selectedTemplate = imgSrc;
+      document.getElementById('statusBg').src = imgSrc;
+      document.getElementById('overlayText').textContent = ownerDetails.shopName;
+      document.getElementById('overlayOwner').textContent = 'By: ' + ownerDetails.ownerName;
+      if (ownerDetails.logoSrc) {
+        document.getElementById('overlayLogo').src = ownerDetails.logoSrc;
+      }
+      nextStep(4);
+    }
+  </script>
+</body>
+</html>'''
+
+# Write index.html
+os.makedirs(f'{static_folder}/assets', exist_ok=True)
+with open(f'{static_folder}/index.html', 'w', encoding='utf-8') as f:
+    f.write(index_html_content)
+
+# Copy user images to assets
+for img in ['pexels-souvik-laha-3637528-10852670.jpg', 'Durga Maa.jpg', 'Harathi.jpg', 'Logo.jpg']:
+    shutil.copy(img, f'{static_folder}/assets/{img}')
+
+# Create placeholder files
+with open(f'{static_folder}/assets/upi-qr.png', 'wb') as f:
+    f.write(b'')
+with open(f'{static_folder}/assets/devotional-song.mp3', 'wb') as f:
+    f.write(b'')
+
+
